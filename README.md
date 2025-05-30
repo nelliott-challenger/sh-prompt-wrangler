@@ -4,9 +4,11 @@
 Prerequisites:
 - Node 22.14
 - pnpm
+- A valid API key for OpenAI API
 
 1. Clone the repo
 2. Run `pnpm install`
+3. Create a .env file with `VITE_OPENAI_API_KEY=YOUR_API_KEY`
 3. Run `pnpm run dev` -- this starts the dev server
 4. In the browser, navigate to the localhost URL output from the previous step.
 5. use `pnpm run test` to run unit tests
