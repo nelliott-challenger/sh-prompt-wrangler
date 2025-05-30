@@ -74,7 +74,7 @@ function App() {
 
   return (
     <div className="app">
-      <h1>Enhanced Form Demo</h1>
+      <h1>Prompt Wrangler</h1>
       
       <div className="form-container">
         <form onSubmit={handleSubmit} className="form">
