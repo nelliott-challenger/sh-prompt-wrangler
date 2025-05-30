@@ -10,6 +10,16 @@ interface FormData {
   maxTokens: string
 }
 
+interface OpenAIResult {
+  result: any
+  tokenUsage: {
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+  }
+  responseTime: number
+}
+
 function App() {
   const [formData, setFormData] = useState<FormData>({
     systemPrompt: '',
@@ -18,8 +28,9 @@ function App() {
     temperature: '',
     maxTokens: ''
   })
-  const [apiResponse, setApiResponse] = useState<any>(null)
+  const [openAIResult, setOpenAIResult] = useState<OpenAIResult | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({
@@ -31,16 +42,34 @@ function App() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
     
     try {
       const result = await callOpenAI(formData)
-      setApiResponse(result.result)
+      setOpenAIResult(result)
     } catch (error) {
       console.error('Error calling OpenAI service:', error)
-      setApiResponse({ error: error instanceof Error ? error.message : 'Unknown error occurred' })
+      setError(error instanceof Error ? error.message : 'Unknown error occurred')
+      setOpenAIResult(null)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const renderResponseContent = () => {
+    if (!openAIResult?.result?.choices?.[0]?.message?.content) {
+      return 'No content available'
+    }
+    
+    const content = openAIResult.result.choices[0].message.content
+    const parsedContent = JSON.parse(content)
+    const formattedContent = JSON.stringify(parsedContent, null, 2)
+    
+    return (
+      <div className={`response-content json-content`}>
+        {formattedContent}
+      </div>
+    )
   }
 
   return (
@@ -120,12 +149,45 @@ function App() {
           </div>
         </form>
         
-        {apiResponse && (
+        {error && (
+          <div className="output-box error">
+            <h3>Error:</h3>
+            <pre className="api-response">
+              {error}
+            </pre>
+          </div>
+        )}
+        
+        {openAIResult && (
           <div className="output-box">
             <h3>OpenAI API Response:</h3>
-            <pre className="api-response">
-              {JSON.stringify(apiResponse, null, 2)}
-            </pre>
+            
+            <div className="usage-stats">
+              <h4>Usage Statistics:</h4>
+              <div className="stats-grid">
+                <div className="stat-item">
+                  <strong>Response Time:</strong>
+                  <span>{openAIResult.responseTime}ms</span>
+                </div>
+                <div className="stat-item">
+                  <strong>Total Tokens:</strong>
+                  <span>{openAIResult.tokenUsage.totalTokens}</span>
+                </div>
+                <div className="stat-item">
+                  <strong>Prompt Tokens:</strong>
+                  <span>{openAIResult.tokenUsage.promptTokens}</span>
+                </div>
+                <div className="stat-item">
+                  <strong>Completion Tokens:</strong>
+                  <span>{openAIResult.tokenUsage.completionTokens}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="response-section">
+              <h4>Response:</h4>
+              {renderResponseContent()}
+            </div>
           </div>
         )}
       </div>

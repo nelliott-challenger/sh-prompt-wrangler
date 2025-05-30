@@ -83,24 +83,6 @@ describe('buildRequestBody', () => {
       })
     })
 
-    it('should create default "Hello" message when no prompts are provided', () => {
-      const requestData = {
-        systemPrompt: '',
-        userPrompt: '',
-        inputText: '',
-        temperature: '',
-        maxTokens: ''
-      }
-
-      const result = buildRequestBody(requestData)
-
-      expect(result.messages).toHaveLength(1)
-      expect(result.messages[0]).toEqual({
-        role: 'user',
-        content: 'Hello'
-      })
-    })
-
     it('should ignore whitespace-only prompts', () => {
       const requestData = {
         systemPrompt: '   ',

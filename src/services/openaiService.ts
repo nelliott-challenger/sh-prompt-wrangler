@@ -7,15 +7,23 @@ interface OpenAIRequest {
 }
 
 interface OpenAIResponse {
-  result: any // Raw API response for now
+  result: any // Raw API response
+  tokenUsage: {
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+  }
+  responseTime: number // Response time in milliseconds
 }
 
-const API_KEY = 'API_KEY_HERE'
+const API_KEY = import.meta.env.VITE_OPENAI_API_KEY
+
+export const replaceInputTextPlaceholder = (userPrompt: string, inputText: string): string => {
+  return userPrompt.replace(/\{INPUT_TEXT\}/g, inputText)
+}
 
 export const buildRequestBody = (requestData: OpenAIRequest) => {
   const messages = []
-  
-  // Add system message if provided
   if (requestData.systemPrompt.trim()) {
     messages.push({
       role: 'system',
@@ -23,30 +31,27 @@ export const buildRequestBody = (requestData: OpenAIRequest) => {
     })
   }
   
-  // Add user message if provided
-  if (requestData.userPrompt.trim()) {
+  let processedUserPrompt = requestData.userPrompt
+  if (requestData.inputText.trim() && requestData.userPrompt.trim()) {
+    processedUserPrompt = replaceInputTextPlaceholder(requestData.userPrompt, requestData.inputText)
+  }
+  
+  if (processedUserPrompt.trim()) {
     messages.push({
       role: 'user', 
-      content: requestData.userPrompt
+      content: processedUserPrompt
     })
   }
   
-  // Add input text as another user message if provided
   if (requestData.inputText.trim()) {
-    messages.push({
-      role: 'user',
-      content: requestData.inputText
-    })
+    if (!requestData.userPrompt.trim() || !requestData.userPrompt.includes('{INPUT_TEXT}')) {
+      messages.push({
+        role: 'user',
+        content: requestData.inputText
+      })
+    }
   }
-  
-  // If no messages were added, add a default one
-  if (messages.length === 0) {
-    messages.push({
-      role: 'user',
-      content: 'Hello'
-    })
-  }
-  
+
   const requestBody = {
     model: 'gpt-4.1',
     messages: messages,
@@ -59,6 +64,7 @@ export const buildRequestBody = (requestData: OpenAIRequest) => {
 
 export const callOpenAI = async (requestData: OpenAIRequest): Promise<OpenAIResponse> => {
   const requestBody = buildRequestBody(requestData)
+  const startTime = Date.now()
   
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -71,12 +77,24 @@ export const callOpenAI = async (requestData: OpenAIRequest): Promise<OpenAIResp
     })
     
     const data = await response.json()
+    const endTime = Date.now()
+    const responseTime = endTime - startTime
     
     if (!response.ok) {
       throw new Error(`OpenAI API error: ${data.error?.message || 'Unknown error'}`)
     }
     
-    return { result: data }
+    const tokenUsage = {
+      promptTokens: data.usage?.prompt_tokens || 0,
+      completionTokens: data.usage?.completion_tokens || 0,
+      totalTokens: data.usage?.total_tokens || 0
+    }
+    
+    return { 
+      result: data,
+      tokenUsage,
+      responseTime
+    }
   } catch (error) {
     console.error('Error calling OpenAI API:', error)
     throw error
