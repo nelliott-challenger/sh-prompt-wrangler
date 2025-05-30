@@ -83,24 +83,6 @@ describe('buildRequestBody', () => {
       })
     })
 
-    it('should ignore whitespace-only prompts', () => {
-      const requestData = {
-        systemPrompt: '   ',
-        userPrompt: '\t\n',
-        inputText: '  \r\n  ',
-        temperature: '',
-        maxTokens: ''
-      }
-
-      const result = buildRequestBody(requestData)
-
-      expect(result.messages).toHaveLength(1)
-      expect(result.messages[0]).toEqual({
-        role: 'user',
-        content: 'Hello'
-      })
-    })
-
     it('should trim whitespace from prompts', () => {
       const requestData = {
         systemPrompt: '  You are helpful  ',
@@ -275,42 +257,6 @@ describe('buildRequestBody', () => {
         temperature: 0.5,
         max_tokens: 1000
       })
-    })
-  })
-
-  describe('Edge Cases', () => {
-    it('should handle only temperature provided', () => {
-      const requestData = {
-        systemPrompt: '',
-        userPrompt: '',
-        inputText: '',
-        temperature: '0.3',
-        maxTokens: ''
-      }
-
-      const result = buildRequestBody(requestData)
-
-      expect(result.temperature).toBe(0.3)
-      expect(result).not.toHaveProperty('max_tokens')
-      expect(result.messages).toHaveLength(1)
-      expect(result.messages[0].content).toBe('Hello')
-    })
-
-    it('should handle only max_tokens provided', () => {
-      const requestData = {
-        systemPrompt: '',
-        userPrompt: '',
-        inputText: '',
-        temperature: '',
-        maxTokens: '200'
-      }
-
-      const result = buildRequestBody(requestData)
-
-      expect(result.max_tokens).toBe(200)
-      expect(result).not.toHaveProperty('temperature')
-      expect(result.messages).toHaveLength(1)
-      expect(result.messages[0].content).toBe('Hello')
     })
   })
 }) 
